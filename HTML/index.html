@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netflix Clone</title>
+  <!-- <link rel="icon" href="HTML/favicon.ico" type="image/x-icon"> -->
+
+  <!-- <link rel="stylesheet" href="styles.css"> -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #141414;
+      color: #fff;
+    }
+
+    a {
+      text-decoration: none;
+      color: #fff;
+    }
+
+    header {
+      background-color: #141414;
+      padding: 20px;
+    }
+
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo img {
+      width: 150px;
+    }
+
+    .sign-in-btn {
+      padding: 10px 20px;
+      background-color: #e50914;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+
+    .sign-in-btn:hover {
+      background-color: #f6121d;
+    }
+
+    /* Hero Section */
+    .hero {
+      position: relative;
+      background: url('https://assets.nflxext.com/ffe/siteui/vlv3/0102e82b-3e26-4d6a-a196-1f2ec599290a/4d4f8654-d681-4781-a86d-87d31e38d6f4/PK-en-20230626-popsignuptwoweeks-perspective_alpha_website_medium.jpg') no-repeat center center/cover;
+      height: 80vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .hero-content {
+      z-index: 2;
+      color: #fff;
+      max-width: 600px;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    .cta-form h3 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+
+    .cta-form input {
+      padding: 10px;
+      width: 70%;
+      border: none;
+      border-radius: 2px;
+      margin-right: 10px;
+    }
+
+    .cta-form button {
+      padding: 10px 20px;
+      background-color: #e50914;
+      border: none;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .cta-form button:hover {
+      background-color: #f6121d;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1;
+    }
+
+    /* Content Section */
+    .content-section {
+      padding: 50px 20px;
+      text-align: center;
+    }
+
+    .content {
+      margin-bottom: 50px;
+    }
+
+    .content img {
+      max-width: 100%;
+      margin-top: 20px;
+    }
+
+    /* Footer */
+    footer {
+      background-color: #141414;
+      padding: 20px;
+      text-align: center;
+      color: #b3b3b3;
+    }
+
+    .footer-links {
+      margin: 20px 0;
+    }
+
+    .footer-links a {
+      margin-right: 15px;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation Bar -->
+  <header>
+    <div class="nav-container">
+      <div class="logo">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix Logo">
+      </div>
+      <div class="nav-right">
+        <a href="{% url 'login_user' %}" class="sign-in-btn">Sign In</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Unlimited movies, TV shows, and more.</h1>
+      <p>Watch anywhere. Cancel anytime.</p>
+      <form action="{% url 'registration' %}" method="POST" class="cta-form">
+        {% csrf_token %}
+        <h3>Ready to watch? Enter your email to create or restart your membership.</h3>
+        <input type="email" name="email" placeholder="Email address" required>
+        <button type="submit">Get Started &gt;</button>
+      </form>
+    </div>
+    <div class="hero-overlay"></div>
+  </section>
+
+  <!-- Content Section -->
+  <section class="content-section">
+    <div class="content">
+      <h2>Enjoy on your TV.</h2>
+      <p>Watch on Smart TVs, Playstation, Xbox, Chromecast, Apple TV, Blu-ray players, and more.</p>
+      <img src="https://assets.nflxext.com/ffe/siteui/acquisition/ourStory/fuji/desktop/tv.png" alt="TV image">
+    </div>
+    <div class="content">
+      <h2>Download your shows to watch offline.</h2>
+      <p>Save your favorites easily and always have something to watch.</p>
+      <img src="https://assets.nflxext.com/ffe/siteui/acquisition/ourStory/fuji/desktop/mobile-0819.jpg"
+        alt="Mobile download">
+    </div>
+    <div class="content">
+      <h2>Watch everywhere.</h2>
+      <p>Stream unlimited movies and TV shows on your phone, tablet, laptop, and TV without paying more.</p>
+      <img src="https://assets.nflxext.com/ffe/siteui/acquisition/ourStory/fuji/desktop/device-pile.png" alt="Devices">
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>Questions? Contact us.</p>
+    <div class="footer-links">
+      <a href="#">FAQ</a>
+      <a href="#">Help Center</a>
+      <a href="#">Terms of Use</a>
+      <a href="#">Privacy</a>
+    </div>
+    <p>&copy; 2024 Netflix Clone</p>
+  </footer>
+
+</body>
+
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Netflix</title>
+ <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+ <style>
+  /* General Styles */
+  * {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+  }
+
+  body {
+   font-family: Arial, sans-serif;
+   background-color: #141414;
+   color: #fff;
+  }
+
+  header {
+   background-color: #141414;
+   padding: 20px 0;
+   position: sticky;
+   top: 0;
+   z-index: 10;
+  }
+
+  .nav-container {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   width: 90%;
+   margin: 0 auto;
+  }
+
+  .logo img {
+   width: 120px;
+  }
+
+  /* Main content */
+  .main-content {
+   padding: 50px 20px;
+   text-align: center;
+  }
+
+  .main-content h1 {
+   font-size: 2.5rem;
+   margin-bottom: 20px;
+   color: #e50914;
+  }
+
+  .main-content p {
+   font-size: 1.2rem;
+   margin-bottom: 30px;
+  }
+
+  .start-watching-btn {
+   display: inline-block;
+   padding: 15px 30px;
+   background-color: #e50914;
+   color: #fff;
+   text-decoration: none;
+   font-size: 1.2rem;
+   border-radius: 5px;
+   margin-top: 20px;
+  }
+
+  /* Recommendations Section */
+  .recommendations-container {
+   padding: 40px 20px;
+  }
+
+  .recommendations {
+   display: grid;
+   grid-template-columns: repeat(4, 1fr);
+   gap: 20px;
+   justify-items: center;
+  }
+
+  .recommendation-card {
+   width: 150px;
+   text-align: center;
+   color: #b3b3b3;
+   text-decoration: none;
+  }
+
+  .recommendation-card img {
+   width: 100%;
+   border-radius: 10px;
+   transition: transform 0.3s;
+  }
+
+  .recommendation-card img:hover {
+   transform: scale(1.05);
+  }
+
+  .recommendation-card p {
+   margin-top: 10px;
+   font-size: 0.9rem;
+  }
+
+  /* Footer */
+  footer {
+   background-color: #141414;
+   padding: 20px;
+   text-align: center;
+   color: #b3b3b3;
+   margin-top: 40px;
+  }
+ </style>
+</head>
+
+<body>
+ <!-- Navigation Bar -->
+ <header>
+  <div class="nav-container">
+   <div class="logo">
+    <a href="{% url 'index' %}">
+     <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix Logo">
+    </a>
+   </div>
+  </div>
+ </header>
+
+ <!-- Main Content -->
+ <div class="main-content">
+  <h1>Subscription Successful!</h1>
+  <p>Thank you for subscribing! Enjoy unlimited access to your favorite shows and movies.</p>
+
+  <p>Explore some popular picks:</p>
+
+  <!-- Recommendations Section -->
+  <div class="recommendations-container">
+   <div class="recommendations" id="recommendations">
+    <!-- JavaScript will populate this section with movie posters -->
+   </div>
+  </div>
+
+  <a href="#" class="start-watching-btn">Start Watching</a>
+ </div>
+
+ <!-- Footer -->
+ <footer>
+  <p>Questions? Contact us.</p>
+  <p>&copy; 2024 Netflix Clone</p>
+ </footer>
+
+ <script>
+  // Define a list of recommended movies
+  const recommendedMovies = [
+   { title: "The Matrix", poster: "https://image.tmdb.org/t/p/w200/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg", link: "https://www.themoviedb.org/movie/603-the-matrix" },
+   { title: "Gladiator", poster: "https://image.tmdb.org/t/p/w200/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg", link: "https://www.themoviedb.org/movie/98-gladiator" },
+   { title: "The Dark Knight", poster: "https://image.tmdb.org/t/p/w200/qJ2tW6WMUDux911r6m7haRef0WH.jpg", link: "https://www.themoviedb.org/movie/155-the-dark-knight" },
+   { title: "Avengers: Endgame", poster: "https://image.tmdb.org/t/p/w200/or06FN3Dka5tukK1e9sl16pB3iy.jpg", link: "https://www.themoviedb.org/movie/299534-avengers-endgame" },
+   { title: "Joker", poster: "https://image.tmdb.org/t/p/w200/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg", link: "https://www.themoviedb.org/movie/475557-joker" },
+   { title: "Forrest Gump", poster: "https://upload.wikimedia.org/wikipedia/en/6/67/Forrest_Gump_poster.jpg", link: "https://www.themoviedb.org/movie/13-forrest-gump" },
+   { title: "The Godfather", poster: "https://image.tmdb.org/t/p/w200/3bhkrj58Vtu7enYsRolD1fZdja1.jpg", link: "https://www.themoviedb.org/movie/238-the-godfather" },
+   { title: "Schindler's List", poster: "https://image.tmdb.org/t/p/w200/c8Ass7acuOe4za6DhSattE359gr.jpg", link: "https://www.themoviedb.org/movie/424-schindlers-list" },
+   { title: "The Lord of the Rings: The Fellowship of the Ring", poster: "https://image.tmdb.org/t/p/w200/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg", link: "https://www.themoviedb.org/movie/120-the-lord-of-the-rings-the-fellowship-of-the-ring" },
+   { title: "The Shawshank Redemption", poster: "https://image.tmdb.org/t/p/w200/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg", link: "https://www.themoviedb.org/movie/278-the-shawshank-redemption" },
+   { title: "The Lion King", poster: "https://image.tmdb.org/t/p/w200/sKCr78MXSLixwmZ8DyJLrpMsd15.jpg", link: "https://www.themoviedb.org/movie/8587-the-lion-king" },
+   { title: "Star Wars: A New Hope", poster: "https://image.tmdb.org/t/p/w200/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg", link: "https://www.themoviedb.org/movie/11-star-wars" }
+  ];
+
+  // Populate the recommendations section
+  const recommendationsContainer = document.getElementById('recommendations');
+  recommendationsContainer.innerHTML = recommendedMovies.map(movie => `
+            <a href="${movie.link}" target="_blank" class="recommendation-card">
+                <img src="${movie.poster}" alt="${movie.title}">
+                <p>${movie.title}</p>
+            </a>
+        `).join('');
+ </script>
+</body>
+
+</html>

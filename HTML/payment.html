@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netflix Payment Clone</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #141414;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .logo img {
+      width: 150px;
+      margin-bottom: 40px;
+    }
+
+    .payment-form h2 {
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      color: #333;
+      background-color: #fff;
+    }
+
+    button {
+      background-color: #e50914;
+      border: none;
+      color: #fff;
+      padding: 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #f6121d;
+    }
+
+    .StripeElement {
+      background-color: white;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+    }
+
+    #card-errors {
+      color: #fa755a;
+      margin-top: 10px;
+    }
+
+    .confirmation {
+      text-align: center;
+      margin-top: 40px;
+    }
+  </style>
+  <!-- Stripe.js library -->
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix Logo"
+        width="150">
+    </div>
+
+    <!-- Payment Form Section -->
+    <div class="payment-form">
+      <h2>Enter Payment Details</h2>
+      <form id="subscriptionForm">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="cardholderName">Cardholder Name</label>
+          <input type="text" id="cardholderName" required>
+        </div>
+
+        <!-- Card Element (Stripe auto-detects card type) -->
+        <div class="form-group">
+          <label for="card-element">Credit or Debit Card</label>
+          <div id="card-element" class="StripeElement"></div> <!-- Stripe Elements will insert the card input here -->
+          <div id="card-errors" role="alert"></div> <!-- Display errors for card input -->
+        </div>
+
+        <button type="submit" id="submit-button">Start Subscription</button>
+      </form>
+    </div>
+
+    <!-- Confirmation Message -->
+    <div class="confirmation" id="confirmationMessage" style="display: none;">
+      <h2>Thank you for subscribing!</h2>
+      <p>Your subscription has been successfully processed.</p>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    // Get the CSRF token from the cookie
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Fetch CSRF token
+    const csrftoken = getCookie('csrftoken');
+    const stripe = Stripe("{{ STRIPE_TEST_PUBLIC_KEY }}");  // Django variable for Stripe public key
+    const elements = stripe.elements();
+
+    // Create an instance of the card Element
+    const cardElement = elements.create('card', {
+      style: {
+        base: {
+          color: '#32325d',
+          fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+          fontSmoothing: 'antialiased',
+          fontSize: '16px',
+          '::placeholder': {
+            color: '#aab7c4'
+          }
+        },
+        invalid: {
+          color: '#fa755a',
+          iconColor: '#fa755a'
+        }
+      }
+    });
+
+    // Mount the card Element into the `card-element` div.
+    cardElement.mount('#card-element');
+
+    // Handle real-time validation errors from the card Element
+    cardElement.on('change', function (event) {
+      const displayError = document.getElementById('card-errors');
+      if (event.error) {
+        displayError.textContent = event.error.message;
+      } else {
+        displayError.textContent = '';
+      }
+    });
+
+    // Handle form submission for subscription
+    const form = document.getElementById('subscriptionForm');
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();  // Prevent the form from submitting the default way
+
+      // Disable the submit button to prevent multiple clicks
+      const submitButton = document.getElementById('submit-button');
+      submitButton.disabled = true;
+      submitButton.textContent = 'Processing...';
+
+      // Create a payment method using the card element
+      stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: {
+          name: document.getElementById('cardholderName').value
+        }
+      }).then(function (result) {
+        if (result.error) {
+          // Display error in the payment form
+          const errorElement = document.getElementById('card-errors');
+          errorElement.textContent = result.error.message;
+
+          // Re-enable the submit button
+          submitButton.disabled = false;
+          submitButton.textContent = 'Pay';
+        } else {
+          // Send the PaymentMethod ID to your server to create a subscription session
+          fetch(`/subscribe/{{ price_id }}`, {  // Adjusted to ensure proper CSRF handling
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken  // Include CSRF token in headers
+            },
+            body: JSON.stringify({
+              payment_method: result.paymentMethod.id
+            })
+          })
+            .then(function (response) {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then(function (session) {
+              if (session.error) {
+                alert('Error: ' + session.error);
+              } else {
+                // Redirect the user to Stripe Checkout using the session ID
+                stripe.redirectToCheckout({ sessionId: session.sessionId }).then(function (result) {
+                  if (result.error) {
+                    // If redirect fails, display an error
+                    document.getElementById('card-errors').textContent = result.error.message;
+                  }
+                });
+              }
+            })
+            .catch(function (error) {
+              console.error('Error:', error);
+
+              // Re-enable the submit button
+              submitButton.disabled = false;
+              submitButton.textContent = 'Pay';  // Reset the button text
+            });
+        }
+      });
+    });
+  </script>
+
+</body>
+
+</html>
