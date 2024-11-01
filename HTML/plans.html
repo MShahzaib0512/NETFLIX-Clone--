@@ -275,14 +275,13 @@
   <script src="https://js.stripe.com/v3/"></script>
   <script>
     const stripe = Stripe("{{ STRIPE_TEST_PUBLIC_KEY }}");
-    console.log(stripe)
     const email = `{{ email }}`;
 
     async function selectPlan(priceId) {
       const csrftoken = getCookie('csrftoken');
 
       try {
-        const response = await fetch(`/subscribe`, {
+        const response = fetch(`subscribe`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -291,11 +290,12 @@
           body: JSON.stringify({ price_id: priceId, email: email })
         });
 
+        console.log("data")
         const session = await response.json();
         if (session.error) {
           alert(`Error: ${session.error}`);
         } else {
-          await stripe.redirectToCheckout({ sessionId: session.sessionId });
+          await stripe.redirectToCheckout({ sessionId: session.session_Id });
         }
       } catch (error) {
         console.error('Error during plan selection:', error);
@@ -327,8 +327,6 @@
       document.getElementById('yearly-btn').classList.toggle('active', !isMonthly);
     }
   </script>
-
-
 </body>
 
 </html>

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,6 +22,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-=728^!av&%!y%k2eqvlszjqu4oxse#2ull9)3r3^#tzsy=^4(d'
+
+
+# 'django-insecure-=728^!av&%!y%k2eqvlszjqu4oxse#2ull9)3r3^#tzsy=^4(d'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -123,10 +127,10 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-STRIPE_TEST_PUBLIC_KEY = 'pk_test_51Q7rnzRpuoXZJx1eM8m7kFKRslf6IiRlTpVqMOEqjtUPJVl1JZmFKr2ewW3nRCRLa5gK16Xflt6p3HLunGRXmJGv00jYvX9LS4'
-# STRIPE_TEST_SECRET_KEY = 'sk_test_51Q7rnzRpuoXZJx1e6ZOU5AOrO4h6J1b1kXFoMChZaa5G4lDfYhg7sHhWmbWSUFP0x43TyGSTIIi8Svq1aedpJuXR00bI6UP4nz'
 DJSTRIPE_WEBHOOK_SECRET='whsec_lDlJ9Mn7hZmSZ0RQdLMmojFhzBZsceBI'
 DJSTRIPE_FOREIGN_KEY_TO_FIELD='id'
 DJSTRIPE_SUBSCRIBER_MODEL = 'auth.User'  
 DJSTRIPE_SUBSCRIBER_MODEL_FIELD = 'email'
 DJSTRIPE_TEST_MODE = True
+STRIPE_TEST_SECRET_KEY = config('STRIPE_TEST_SECRET_KEY')
+STRIPE_TEST_PUBLIC_KEY = config('STRIPE_TEST_PUBLIC_KEY')

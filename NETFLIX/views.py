@@ -11,8 +11,8 @@ import stripe
 import json
 from .models import *
 
-# Set Stripe API Key
 key = APIKey.objects.filter(livemode=False).first()
+# print(key.secret)
 stripe.api_key = key.secret
 # Create your views here.
 
@@ -78,15 +78,12 @@ def register(request):
             return render(request, 'index.html', {'error': 'An unexpected error occurred while creating your account.'})
 
         # Create Stripe customer and sync with DJ Stripe
-        stripe.api_key = key.secret
         try:
             if not stripe.api_key:
                 raise ValueError("Stripe API key is missing. Please check your configuration.")
 
-            print("Before creating Stripe customer, API Key:", stripe.api_key)
-            stripe_customer = stripe.Customer.create(email=email)
-            djstripe_customer = Customer.sync_from_stripe_data(stripe_customer)
-            print(djstripe_customer.id)
+            stripe_customer = create_stripe_customer(email=email)
+            print(" customer created successfully ",stripe_customer)
 
         except ValueError as e:
             print(f"Configuration error: {e}")
@@ -96,7 +93,8 @@ def register(request):
             print(f"Failed to create Stripe customer: {e}")
             return render(request, 'index.html', {'error': 'Failed to create a customer in Stripe.'})
 
-        return redirect(reverse('plans') + f"?email={email}")
+        return redirect('plans', email=email)
+
 
     return render(request, 'registration_form.html')
 
@@ -116,54 +114,58 @@ def payment(request, cid):
         'price_id': price_id
     })
 
+def create_stripe_customer(email):
+    try:
+        stripe_customer = stripe.Customer.create(email=email)
+        return Customer.sync_from_stripe_data(stripe_customer)
+    except Exception as e:
+        print(f"Stripe error: {e}")
+        return None
+
 @login_required
 @require_POST
 def subscribe(request):
     """Handle subscription creation."""
-    # Parse JSON data from the request body
+    print("In subscribe view")
+
     try:
         data = json.loads(request.body)
+        price_id = data.get('price_id')
         email = data.get('email')
-        priceId=data.get('price_id')
-        
-        if not email:
-            return JsonResponse({'error': 'Email is required'}, status=400)
 
-        # Check if the user exists
-        user = User.objects.filter(email=email).first()
-        print(user)
-        if user:
-            stripe_customer = Customer.sync_from_stripe_data(user)
-        else:
-            # Create Stripe and DJ Stripe customer if user doesn't exist
-            stripe.api_key = key.secret
-            customer = stripe.Customer.create(email=email)
-            print("This is customer that is created ",customer)
-            stripe_customer = Customer.sync_from_stripe_data(customer)
-            print("This is i want to sync from stripe  ",stripe_customer)
+        if not price_id or not email:
+            return JsonResponse({'error': 'Missing required fields: price_id or email.'}, status=400)
 
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        # Fetch or create Stripe customer
+        stripe_customer = Customer.objects.filter(email=email).first()
+        if not stripe_customer:
+            stripe_customer = create_stripe_customer(email)
+            if not stripe_customer:
+                return JsonResponse({'error': 'Failed to create Stripe customer.'}, status=400)
+
+        # Create checkout session
+        print("Stripe customer:", stripe_customer)
+        try:
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{'price': price_id, 'quantity': 1}],
+                mode='subscription',
+                success_url=request.build_absolute_uri(reverse('login_user')),
+                cancel_url=request.build_absolute_uri(reverse('failed')),
+                customer=stripe_customer.id,
+            )
+            return JsonResponse({'session_id': checkout_session.id})
+        except stripe.error.StripeError as e:
+            print(f"Stripe API error: {e}")
+            return JsonResponse({'error': 'Failed to create checkout session with Stripe.'}, status=500)
+
+    except (ValueError, json.JSONDecodeError) as e:
+        print(f"JSON Error: {e}")
+        return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
     except Exception as e:
-        print(f"Failed to process subscription: {e}")
-        print(f"Stripe API Key: {stripe.api_key}")
-        return JsonResponse({'error': 'Internal server error'}, status=500)
+        print(f"Error creating checkout session: {e}")
+        return JsonResponse({'error': 'Failed to create subscription session.'}, status=500)
 
-    # Create Stripe Checkout Session
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{'price': priceId, 'quantity': 1}],
-            mode='subscription',
-            success_url=request.build_absolute_uri(reverse('success')) + '?status=success',
-            cancel_url=request.build_absolute_uri(reverse('failed')) + '?status=failure',
-            customer=stripe_customer.id
-        )
-        return JsonResponse({'sessionId': checkout_session.id})
-    
-    except Exception as e:
-        print(f"Subscription creation failed: {e}")
-        return JsonResponse({'error': 'Subscription creation failed'}, status=500)
 
 def failed(request):
     """Render the payment failure page."""
