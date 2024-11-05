@@ -9,6 +9,8 @@ from django.conf import settings
 from djstripe.models import Price, Customer, Subscription, APIKey
 import stripe
 import json
+from django.contrib import messages
+from .decorator import *
 from .models import *
 
 key = APIKey.objects.filter(livemode=False).first()
@@ -19,22 +21,6 @@ stripe.api_key = key.secret
 def index(request):
     """Render the homepage."""
     return render(request, 'index.html')
-
-def plans(request, email):
-    """Render the subscription plans page."""
-    monthly_plans = SubscriptionPlan.objects.prefetch_related('descriptions').filter(interval='monthly')
-    yearly_plans = SubscriptionPlan.objects.prefetch_related('descriptions').filter(interval='yearly')
-    plans = Price.objects.all()  # Getting all prices from DJ Stripe
-
-    context = {
-        'plan': plans,
-        'monthly_plans': monthly_plans,
-        'yearly_plans': yearly_plans,
-        'STRIPE_TEST_PUBLIC_KEY': settings.STRIPE_TEST_PUBLIC_KEY,
-        'email': email
-    }
-
-    return render(request, 'plans.html', context)
 
 def login_user(request):
     """Handle user login."""
@@ -47,37 +33,38 @@ def login_user(request):
             auth_login(request, user)
             return redirect('success')
         else:
-            return render(request, "failed.html")
+            messages.error(request,"Error! invalid Email/password")
+            return redirect("login_user")
 
     return render(request, 'login.html')
 
 def register(request):
     """Handle user registration."""
-    # Debug: Check Stripe API Key
-    print("Stripe API Key:", stripe.api_key)
-
     if request.method == 'POST':
-        # Get form data
         email = request.POST.get('email')
         password = request.POST.get('password')
         username = request.POST.get('username')
-
-        # Validate input
+        
         if not email or not password or not username:
             return render(request, 'index.html', {'error': 'All fields are required.'})
-
+        
+        if User.objects.filter(email=email).exists():
+            messages.error(request,"user with the email already exists")
+            return redirect('register')
         if User.objects.filter(username=username).exists():
-            return render(request, 'index.html', {'error': 'Username already taken. Please choose another.'})
+            messages.error(request,"user with the username already exists")
+            return redirect('register')
+        if len(str(password)) < 8:
+            messages.error(request,"your password must at least contains 8 characters")
+            return redirect('register')
 
         try:
-            # Create a new user in Django
             user = User.objects.create_user(username=username, email=email, password=password)
             user.save()
         except Exception as e:
             print(f"Failed to create user: {e}")
             return render(request, 'index.html', {'error': 'An unexpected error occurred while creating your account.'})
 
-        # Create Stripe customer and sync with DJ Stripe
         try:
             if not stripe.api_key:
                 raise ValueError("Stripe API key is missing. Please check your configuration.")
@@ -93,10 +80,10 @@ def register(request):
             print(f"Failed to create Stripe customer: {e}")
             return render(request, 'index.html', {'error': 'Failed to create a customer in Stripe.'})
 
-        return redirect('plans', email=email)
+        return redirect('fetch_subscription_plans', email=email)
 
 
-    return render(request, 'registration_form.html')
+    return render(request, 'registration.html')
 
 def registration(request):
     """Render the registration confirmation page."""
@@ -122,55 +109,84 @@ def create_stripe_customer(email):
         print(f"Stripe error: {e}")
         return None
 
-@login_required
-@require_POST
 def subscribe(request):
     """Handle subscription creation."""
     print("In subscribe view")
 
     try:
-        data = json.loads(request.body)
-        price_id = data.get('price_id')
-        email = data.get('email')
+        if request.method == 'POST':
+            email = request.POST.get('email')
+            price_id = request.POST.get('price_id')
 
-        if not price_id or not email:
-            return JsonResponse({'error': 'Missing required fields: price_id or email.'}, status=400)
-
-        # Fetch or create Stripe customer
-        stripe_customer = Customer.objects.filter(email=email).first()
-        if not stripe_customer:
-            stripe_customer = create_stripe_customer(email)
+            print(price_id)
+            if not price_id or not email:
+                messages.error(request,'Missing required fields: price_id or email.')
+                return redirect ('fetch_subscription_plans')
+            
+            customers=stripe.Customer.list()
+            stripe_customer = Customer.objects.filter(email=email).first()
+            for customer in customers:
+                print(customer.email)
+                if customer.email==email:
+                    stripe_customer=customer    
+            
             if not stripe_customer:
-                return JsonResponse({'error': 'Failed to create Stripe customer.'}, status=400)
+                stripe_customer = create_stripe_customer(email)
+                if not stripe_customer:
+                    return redirect(request,'Failed to create Stripe customer.')
 
-        # Create checkout session
-        print("Stripe customer:", stripe_customer)
-        try:
-            checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                line_items=[{'price': price_id, 'quantity': 1}],
-                mode='subscription',
-                success_url=request.build_absolute_uri(reverse('login_user')),
-                cancel_url=request.build_absolute_uri(reverse('failed')),
-                customer=stripe_customer.id,
-            )
-            return JsonResponse({'session_id': checkout_session.id})
-        except stripe.error.StripeError as e:
-            print(f"Stripe API error: {e}")
-            return JsonResponse({'error': 'Failed to create checkout session with Stripe.'}, status=500)
+            print("Stripe customer:", stripe_customer)
+            try:
+                checkout_session = stripe.checkout.Session.create(
+                    payment_method_types=['card'],
+                    line_items=[{'price': price_id, 'quantity': 1}],
+                    mode='subscription',
+                    success_url=request.build_absolute_uri(reverse('login_user')),
+                    cancel_url=request.build_absolute_uri(reverse('failed')),
+                    customer=stripe_customer.id,
+                )
+                return redirect(checkout_session.url)
+            except stripe.error.StripeError as e:
+                # print(f"Stripe API error: {e}")
+                # print(price_id)
+                messages.error(request,'Failed to create checkout session with Stripe.')
+                return redirect('fetch_subscription_plans')
 
-    except (ValueError, json.JSONDecodeError) as e:
-        print(f"JSON Error: {e}")
-        return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
     except Exception as e:
         print(f"Error creating checkout session: {e}")
-        return JsonResponse({'error': 'Failed to create subscription session.'}, status=500)
-
+        messages.error(request,'Failed to create subscription session.')
+        return redirect('fetch_subscription_plans')
 
 def failed(request):
     """Render the payment failure page."""
     return render(request, "failed.html", {'message': "Payment failed"})
-
+@login_required(login_url="login_user")
+@subscription_required
 def success(request):
     """Render the payment success page."""
     return render(request, "success.html")
+
+def fetch_subscription_plans(request,email):
+    try:
+        products = stripe.Product.list(limit=100)
+        subscription_plans = []
+
+        for product in products.data:
+            prices = stripe.Price.list(product=product.id)
+
+            for price in prices.data:
+                subscription_plans.append({
+                    'id': price.id,  
+                    'product_name': product.name,
+                    'amount': price.unit_amount / 100, 
+                    'currency': price.currency,  
+                    'interval': price.recurring.interval,  
+                    'description': product.description,  
+                    'price_id': price.id,  
+                })
+
+        return render(request, "stripe_plans.html", {'subscription_plans': subscription_plans, 'email':email})
+
+    except stripe.error.StripeError as e:
+        messages.error(request, f"An error occurred: {e.user_message}")
+        return redirect('login_user')

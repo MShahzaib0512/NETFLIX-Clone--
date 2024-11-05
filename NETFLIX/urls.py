@@ -2,13 +2,13 @@ from django.urls import path
 from .views import (
     index,
     register,
-    plans,
     login_user,
     registration,
     payment,
     success,
     failed,
     subscribe,
+    fetch_subscription_plans,
 )
 
 urlpatterns = [
@@ -23,13 +23,13 @@ urlpatterns = [
     path('login_user', login_user, name='login_user'),
 
     # Subscription plans
-    path('plans/<str:email>', plans, name='plans'),
+    path('fetch_subscription_plans/<str:email>', fetch_subscription_plans, name='fetch_subscription_plans'),
 
     # Payment process
     path('payment/<str:cid>', payment, name='payment'),
 
     # Subscription management
-    path('subscribe', subscribe, name='subscribe'),
+    path('subscribe/', subscribe, name='subscribe'),
 
     # Success and failure pages
     path('success', success, name='success'),

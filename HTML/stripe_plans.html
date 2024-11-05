@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Netflix - Choose Your Plan</title>
+ <style>
+  /* General Reset and Body Styles */
+  * {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+  }
+
+  body {
+   font-family: 'Helvetica Neue', Arial, sans-serif;
+   background-color: #141414;
+   color: #fff;
+  }
+
+  a {
+   text-decoration: none;
+   color: #fff;
+  }
+
+  /* Header */
+  header {
+   background-color: #141414;
+   padding: 20px 0;
+   position: sticky;
+   top: 0;
+   z-index: 10;
+   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  .nav-container {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   width: 90%;
+   margin: 0 auto;
+  }
+
+  .logo img {
+   width: 120px;
+  }
+
+  .nav-right .sign-in-btn {
+   padding: 10px 20px;
+   background-color: #e50914;
+   border: none;
+   border-radius: 5px;
+   color: #fff;
+   font-size: 1rem;
+   cursor: pointer;
+   transition: background-color 0.3s ease;
+  }
+
+  .nav-right .sign-in-btn:hover {
+   background-color: #f6121d;
+  }
+
+  /* Plans Section */
+  .plans-section {
+   padding: 50px 20px;
+   text-align: center;
+   background: linear-gradient(to bottom, #141414, #1e1e1e);
+  }
+
+  .plans-header h1 {
+   font-size: 2.5rem;
+   margin-bottom: 10px;
+   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+
+  .plans-header p {
+   font-size: 1.2rem;
+   margin-bottom: 30px;
+   color: #b3b3b3;
+  }
+
+  /* Plans Container */
+  .plans-container {
+   display: flex;
+   flex-direction: row;
+   align-items: flex-start;
+   gap: 20px;
+   margin-top: 30px;
+   justify-content: center;
+   flex-wrap: wrap;
+   padding: 0 20px;
+  }
+
+  /* Individual Plan Cards */
+  .plan {
+   background-color: #222;
+   border-radius: 8px;
+   padding: 20px;
+   max-width: 320px;
+   width: 100%;
+   text-align: center;
+   transition: transform 0.3s ease, box-shadow 0.3s ease;
+   border: 2px solid transparent;
+   position: relative;
+   overflow: hidden;
+   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  }
+
+  .plan:hover {
+   transform: scale(1.05);
+   border-color: #e50914;
+   box-shadow: 0 4px 20px rgba(229, 9, 20, 0.4);
+  }
+
+  .plan h2 {
+   font-size: 1.8rem;
+   margin-bottom: 10px;
+   color: #e50914;
+   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  .plan .price {
+   font-size: 1.5rem;
+   margin-bottom: 20px;
+   color: #e50914;
+  }
+
+  .plan ul {
+   list-style-type: none;
+   text-align: left;
+   margin-bottom: 20px;
+   padding-left: 0;
+  }
+
+  .plan ul li {
+   margin-bottom: 10px;
+   font-size: 1rem;
+   color: #b3b3b3;
+  }
+
+  /* Select Plan Button */
+  .select-plan-btn {
+   padding: 12px 20px;
+   background-color: #e50914;
+   border: none;
+   color: #fff;
+   font-size: 1rem;
+   cursor: pointer;
+   border-radius: 5px;
+   width: 100%;
+   transition: background-color 0.3s ease;
+   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+
+  .select-plan-btn:hover {
+   background-color: #f6121d;
+   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Footer */
+  footer {
+   background-color: #141414;
+   padding: 20px;
+   text-align: center;
+   color: #b3b3b3;
+   margin-top: 40px;
+  }
+
+  .footer-links {
+   margin: 20px 0;
+  }
+
+  .footer-links a {
+   margin-right: 15px;
+   color: #b3b3b3;
+   transition: color 0.3s ease;
+  }
+
+  .footer-links a:hover {
+   color: #fff;
+   text-decoration: underline;
+  }
+ </style>
+</head>
+
+<body>
+ <!-- Navigation Bar -->
+ <header>
+  <div class="nav-container">
+   <div class="logo">
+    <a href="{% url 'index' %}">
+     <img src="https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" alt="Netflix Logo">
+    </a>
+   </div>
+   <div class="nav-right">
+    <a href="login.html" class="sign-in-btn">Sign In</a>
+   </div>
+  </div>
+ </header>
+
+ <!-- Plans Section -->
+ <section class="plans-section">
+  <div class="plans-header">
+   <h1>Choose the plan that’s right for you</h1>
+   <p>Watch all you want. Cancel anytime.</p>
+   <p><strong>Ready to watch? Select your plan to start your membership.</strong></p>
+  </div>
+
+  <!-- Plans Container -->
+  <div class="plans-container">
+   {% for item in subscription_plans %} <!-- Display all subscription plans -->
+   <div class="plan">
+    <h2>{{ item.product_name }}</h2> <!-- Product name -->
+    <p class="price">${{ item.amount }} ({{ item.interval }})</p> <!-- Price and interval -->
+    <ul>
+     <li>{{ item.description }}</li> <!-- Description of the plan -->
+    </ul>
+    <form action="{% url 'subscribe' %}" method="post"> <!-- Use POST to handle subscription selection -->
+     {% csrf_token %}
+     <input type="hidden" name="email" value="{{email}}"> <!-- Price ID for the selected plan -->
+     <input type="hidden" name="price_id" value="{{ item.id }}"> <!-- Price ID for the selected plan -->
+     <button type="submit" class="select-plan-btn">Select Plan</button>
+    </form>
+   </div>
+   {% endfor %}
+  </div>
+ </section>
+
+ <!-- Footer -->
+ <footer>
+  <p>Questions? Contact us.</p>
+  <div class="footer-links">
+   <a href="#">FAQ</a>
+   <a href="#">Help Center</a>
+   <a href="#">Terms of Use</a>
+   <a href="#">Privacy</a>
+  </div>
+  <p>&copy; 2024 Netflix Clone</p>
+ </footer>
+
+</body>
+
+</html>
